@@ -12,7 +12,7 @@ if [ -z "$BUILD_VERSION" ]; then
     else
         VERSION="?"
     fi
-    VERSION="${VERSION}-`date +"%Y%m%d_%H%M%S"`-`hostname`"
+    VERSION="${VERSION}-`date +"%Y%m%d"`-MattDevo"
 else
     VERSION="$BUILD_VERSION"
 fi
