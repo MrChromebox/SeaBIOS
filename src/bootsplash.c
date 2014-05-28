@@ -39,6 +39,9 @@ call16_int10(struct bregs *br)
 void
 enable_vga_console(void)
 {
+    if (! CONFIG_BOOTMENU || !romfile_loadint("etc/show-boot-menu", 1))
+        return;
+
     dprintf(1, "Turning on vga text mode console\n");
     struct bregs br;
 

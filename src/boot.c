@@ -737,7 +737,7 @@ do_boot(int seq_nr)
     struct bev_s *ie = &BEV[seq_nr];
     switch (ie->type) {
     case IPL_TYPE_FLOPPY:
-        printf("Booting from Floppy...\n");
+        //printf("Booting from Floppy...\n");
         boot_disk(0x00, CheckFloppySig);
         break;
     case IPL_TYPE_HARDDISK:
