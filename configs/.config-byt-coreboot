@@ -1,0 +1,16 @@
+CONFIG_COREBOOT=y
+# CONFIG_BOOTSPLASH is not set
+CONFIG_CBFS_LOCATION=0x0
+# CONFIG_MULTIBOOT is not set
+# CONFIG_ATA is not set
+# CONFIG_MEGASAS is not set
+# CONFIG_NVME is not set
+# CONFIG_USB_UHCI is not set
+# CONFIG_USB_OHCI is not set
+# CONFIG_SERIAL is not set
+# CONFIG_SERCON is not set
+# CONFIG_LPT is not set
+# CONFIG_HARDWARE_IRQ is not set
+# CONFIG_MOUSE is not set
+# CONFIG_TCGBIOS is not set
+CONFIG_DEBUG_LEVEL=3
