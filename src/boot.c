@@ -303,6 +303,7 @@ static struct hlist_head BootList VARVERIFY32INIT;
 #define IPL_TYPE_FLOPPY      0x01
 #define IPL_TYPE_HARDDISK    0x02
 #define IPL_TYPE_CDROM       0x03
+#define IPL_TYPE_USB	     0x04
 #define IPL_TYPE_CBFS        0x20
 #define IPL_TYPE_BEV         0x80
 #define IPL_TYPE_BCV         0x81
@@ -380,8 +381,17 @@ boot_add_floppy(struct drive_s *drive_g, const char *desc, int prio)
 void
 boot_add_hd(struct drive_s *drive_g, const char *desc, int prio)
 {
-    bootentry_add(IPL_TYPE_HARDDISK, defPrio(prio, DefaultHDPrio)
+    char *usb = "USB";
+    char short_desc[4];
+    memcpy(short_desc, desc, 3);
+    short_desc[3]='\0';
+    if (strcmp(short_desc, usb) == 0) {
+	bootentry_add(IPL_TYPE_USB, defPrio(prio, DefaultHDPrio)
                   , (u32)drive_g, desc);
+    } else {
+    	bootentry_add(IPL_TYPE_HARDDISK, defPrio(prio, DefaultHDPrio)
+                  , (u32)drive_g, desc);
+    }
 }
 
 void
@@ -533,7 +543,7 @@ static int HaveHDBoot, HaveFDBoot;
 static void
 add_bev(int type, u32 vector)
 {
-    if (type == IPL_TYPE_HARDDISK && HaveHDBoot++)
+    if ((type == IPL_TYPE_HARDDISK || type == IPL_TYPE_USB) && HaveHDBoot++)
         return;
     if (type == IPL_TYPE_FLOPPY && HaveFDBoot++)
         return;
@@ -570,6 +580,10 @@ bcv_prepboot(void)
         case IPL_TYPE_HARDDISK:
             map_hd_drive(pos->drive);
             add_bev(IPL_TYPE_HARDDISK, 0);
+            break;
+	case IPL_TYPE_USB:
+            map_hd_drive(pos->drive);
+            add_bev(IPL_TYPE_USB, 0);
             break;
         case IPL_TYPE_CDROM:
             map_cd_drive(pos->drive);
@@ -729,6 +743,10 @@ do_boot(int seq_nr)
         break;
     case IPL_TYPE_HARDDISK:
         printf("Booting from Hard Disk...\n");
+        boot_disk(0x80, 1);
+        break;
+    case IPL_TYPE_USB:
+        printf("Booting from USB Device...\n");
         boot_disk(0x80, 1);
         break;
     case IPL_TYPE_CDROM:
