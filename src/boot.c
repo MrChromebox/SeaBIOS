@@ -507,26 +507,17 @@ interactive_bootmenu(void)
         printf("\nt. TPM Configuration\n");
     }
 
-    // Get key press.  If the menu key is ESC, do not restart boot unless
-    // 1.5 seconds have passed.  Otherwise users (trained by years of
-    // repeatedly hitting keys to enter the BIOS) will end up hitting ESC
-    // multiple times and immediately booting the primary boot device.
-    int esc_accepted_time = irqtimer_calc(menukey == 1 ? 1500 : 0);
+    // Get key press
     for (;;) {
         scan_code = get_keystroke(1000);
-        if (scan_code == 1 && !irqtimer_check(esc_accepted_time))
-            continue;
         if (tpm_can_show_menu() && scan_code == 20 /* t */) {
             printf("\n");
             tpm_menu();
         }
-        if (scan_code >= 1 && scan_code <= maxmenu+1)
+	if (scan_code > 1 && scan_code <= maxmenu+1)
             break;
     }
     printf("\n");
-    if (scan_code == 0x01)
-        // ESC
-        return;
 
     // Find entry and make top priority.
     int choice = scan_code - 1;
