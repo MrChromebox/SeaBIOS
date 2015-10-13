@@ -48,7 +48,7 @@ enable_vga_console(void)
     call16_int10(&br);
 
     // Write to screen.
-    printf("VS Networks CB-02\n");
+    printf("VS Networks CB-BT-01\n");
     display_uuid();
 }
 
