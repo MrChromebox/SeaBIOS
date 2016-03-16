@@ -486,9 +486,13 @@ sdcard_controller_setup(struct sdhci_s *regs, int prio)
     if (!(present_state & SP_CARD_INSERTED))
         // No card present
         return;
-    dprintf(3, "sdhci@%p ver=%x cap=%x %x\n", regs
-            , readw(&regs->controller_version)
-            , readl(&regs->cap_lo), readl(&regs->cap_hi));
+    u16 ver = readw(&regs->controller_version);
+    u32 cap_lo = readl(&regs->cap_lo);
+    u32 cap_hi = readl(&regs->cap_hi);
+    dprintf(3, "sdhci@%p ver=%x cap=%x %x\n", regs, ver, cap_lo, cap_hi);
+    if (ver == 0xffff && cap_lo == 0xffffffff && cap_hi == 0xffffffff)
+        //invalid controller address
+        return;
     sdcard_reset(regs, SRF_ALL);
     writew(&regs->irq_signal, 0);
     writew(&regs->irq_enable, 0x01ff);
