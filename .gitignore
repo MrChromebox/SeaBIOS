@@ -1,4 +1,4 @@
 out
 *.pyc
 .config
-.config.old
+.config*.old
