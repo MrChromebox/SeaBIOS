@@ -2,3 +2,7 @@ out
 *.pyc
 .config
 .config*.old
+
+# ignore generated files
+/*.bin
+/*.bin.md5
