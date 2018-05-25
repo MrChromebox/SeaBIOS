@@ -490,9 +490,10 @@ sdcard_controller_setup(struct sdhci_s *regs, int prio)
     u32 cap_lo = readl(&regs->cap_lo);
     u32 cap_hi = readl(&regs->cap_hi);
     dprintf(3, "sdhci@%p ver=%x cap=%x %x\n", regs, ver, cap_lo, cap_hi);
-    if (ver == 0xffff && cap_lo == 0xffffffff && cap_hi == 0xffffffff)
-        //invalid controller address
+    if (ver == 0xffff && cap_lo == 0xffffffff && cap_hi == 0xffffffff) {
+        dprintf(1, "Invalid SD controller address\n");
         return;
+    }
     sdcard_reset(regs, SRF_ALL);
     writew(&regs->irq_signal, 0);
     writew(&regs->irq_enable, 0x01ff);
