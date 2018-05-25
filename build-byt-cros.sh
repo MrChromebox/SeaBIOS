@@ -7,8 +7,8 @@ make EXTRAVERSION=-MrChromebox-`date +"%Y.%m.%d"`
 filename="seabios-byt-mrchromebox_`date +"%Y%m%d"`.bin"
 cbfstool ${filename} create -m x86 -s 0x00200000
 cbfstool ${filename} add-payload -f ./out/bios.bin.elf -n payload -b 0x0 -c lzma
-cbfstool ${filename} add -f ~/coreboot/blobs/soc/intel/byt/book/vgabios.bin -n pci8086,0f31.rom -t optionrom
-cbfstool ${filename} add -f ~/coreboot/cbfs/bootorder.emmc -n bootorder -t raw
+cbfstool ${filename} add -f ./coreboot/3rdparty/blobs/soc/intel/byt/book/vgabios.bin -n pci8086,0f31.rom -t optionrom
+cbfstool ${filename} add -f ./coreboot/cbfs/bootorder.emmc -n bootorder -t raw
 cbfstool ${filename} add-int -i 3000 -n etc/boot-menu-wait
 cbfstool ${filename} add-int -i 0xd071f000 -n etc/sdcard0
 cbfstool ${filename} add-int -i 0xd071d000 -n etc/sdcard1
