@@ -10,7 +10,7 @@ cbfstool ${filename} add-payload -f ./out/bios.bin.elf -n payload -b 0x0 -c lzma
 cbfstool ${filename} add -f seavgabios.eve -n seavgabios.rom -t optionrom
 echo "/pci@i0cf8/*@1e,4/drive@0/disk@0\n" > /tmp/bootorder
 cbfstool ${filename} add -f /tmp/bootorder -n bootorder -t raw
-cbfstool ${filename} add -f ~/coreboot/cbfs/links.kbl -n links -t raw
+cbfstool ${filename} add -f ./coreboot/cbfs/links.kbl -n links -t raw
 cbfstool ${filename} add-int -i 3000 -n etc/boot-menu-wait
 cbfstool ${filename} print
 md5sum ${filename} > ${filename}.md5
