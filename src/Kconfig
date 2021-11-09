@@ -93,15 +93,6 @@ endchoice
         help
             Support CBFS files compressed using the lzma decompression
             algorithm.
-    config CBFS_LOCATION
-        depends on COREBOOT_FLASH
-        hex "CBFS memory end location"
-        default 0
-        help
-            Memory address of where the CBFS data ends.  This should
-            be zero for normal builds.  It may be a non-zero value if
-            the CBFS filesystem is at a non-standard location (eg,
-            0xffe00000 if CBFS ends 2Meg below the end of flash).
 
     config MULTIBOOT
         depends on COREBOOT

@@ -88,6 +88,18 @@ struct cbmem_console {
 #define CBMC_OVERFLOW (1 << 31)
 static struct cbmem_console *cbcon = NULL;
 
+#define CB_TAG_BOOT_MEDIA_PARAMS 0x30
+
+struct cb_boot_media_params {
+  u32 tag;
+  u32 size;
+  /* offsets are relative to start of boot media */
+  u64 fmap_offset;
+  u64 cbfs_offset;
+  u64 cbfs_size;
+  u64 boot_media_size;
+};
+
 static u16
 ipchksum(char *buf, int count)
 {
@@ -146,7 +158,12 @@ find_cb_subtable(struct cb_header *cbh, u32 tag)
 struct cb_header *
 find_cb_table(void)
 {
-    struct cb_header *cbh = find_cb_header(0, 0x1000);
+    static struct cb_header *cbh;
+
+    if (cbh)
+        return cbh;
+
+    cbh= find_cb_header(0, 0x1000);
     if (!cbh)
         return NULL;
     struct cb_forward *cbf = find_cb_subtable(cbh, CB_TAG_FORWARD);
@@ -317,20 +334,8 @@ ulzma(u8 *dst, u32 maxlen, const u8 *src, u32 srclen)
  * Coreboot flash format
  ****************************************************************/
 
-#define CBFS_HEADER_MAGIC 0x4F524243
-#define CBFS_VERSION1 0x31313131
-
-struct cbfs_header {
-    u32 magic;
-    u32 version;
-    u32 romsize;
-    u32 bootblocksize;
-    u32 align;
-    u32 offset;
-    u32 pad[2];
-} PACKED;
-
 #define CBFS_FILE_MAGIC 0x455649484352414cLL // LARCHIVE
+#define CBFS_ALIGNMENT 64
 
 struct cbfs_file {
     u64 magic;
@@ -429,30 +434,50 @@ coreboot_cbfs_init(void)
     if (!CONFIG_COREBOOT_FLASH)
         return;
 
-    struct cbfs_header *hdr = *(void **)(CONFIG_CBFS_LOCATION - 4);
-    if ((u32)hdr & 0x03) {
-        dprintf(1, "Invalid CBFS pointer %p\n", hdr);
-        return;
-    }
-    if (CONFIG_CBFS_LOCATION && (u32)hdr > CONFIG_CBFS_LOCATION)
-        // Looks like the pointer is relative to CONFIG_CBFS_LOCATION
-        hdr = (void*)hdr + CONFIG_CBFS_LOCATION;
-    if (hdr->magic != cpu_to_be32(CBFS_HEADER_MAGIC)) {
-        dprintf(1, "Unable to find CBFS (ptr=%p; got %x not %x)\n"
-                , hdr, hdr->magic, cpu_to_be32(CBFS_HEADER_MAGIC));
-        return;
-    }
-    dprintf(1, "Found CBFS header at %p\n", hdr);
+    dprintf(3, "Attempting to initialize coreboot cbfs\n");
 
-    u32 romsize = be32_to_cpu(hdr->romsize);
-    u32 romstart = CONFIG_CBFS_LOCATION - romsize;
-    struct cbfs_file *fhdr = (void*)romstart + be32_to_cpu(hdr->offset);
+    struct cb_header *cbh = find_cb_table();
+    if (!cbh) {
+        dprintf(1, "cbfs_init: unable to find cb table\n");
+        return;
+    }
+
+    struct cb_boot_media_params *cbbmp =
+        find_cb_subtable(cbh, CB_TAG_BOOT_MEDIA_PARAMS);
+
+    if (!cbbmp) {
+        dprintf(1, "cbfs_init: unable to find boot media params\n");
+        return;
+    }
+
+    const u32 romsize = cbbmp->boot_media_size;
+    const u32 cbfs_start = cbbmp->cbfs_offset - romsize;
+    const u32 cbfs_end = cbfs_start + cbbmp->cbfs_size - 1;
+
+    dprintf(3, "cbfs_init: cbfs_start=0x%08x, cbfs_end=0x%08x\n", cbfs_start,
+            cbfs_end);
+
+    u32 offset = cbfs_start;
+
     for (;;) {
-        if ((u32)fhdr - romstart > romsize)
+        if (offset > cbfs_end || offset < cbfs_start)
             break;
-        u64 magic = fhdr->magic;
-        if (magic != CBFS_FILE_MAGIC)
-            break;
+
+        struct cbfs_file *fhdr = (void*)offset;
+
+        if (fhdr->magic != CBFS_FILE_MAGIC) {
+            offset++;
+            offset = ALIGN(offset, CBFS_ALIGNMENT);
+            continue;
+        }
+
+        /* Skip empty space */
+        if (strcmp(fhdr->filename, "") == 0) {
+            offset += ALIGN(be32_to_cpu(fhdr->offset) + be32_to_cpu(fhdr->len)
+                           , CBFS_ALIGNMENT);
+            continue;
+        }
+
         struct cbfs_romfile_s *cfile = malloc_tmp(sizeof(*cfile));
         if (!cfile) {
             warn_noalloc();
@@ -473,8 +498,8 @@ coreboot_cbfs_init(void)
         }
         romfile_add(&cfile->file);
 
-        fhdr = (void*)ALIGN((u32)cfile->data + cfile->rawsize
-                            , be32_to_cpu(hdr->align));
+        offset = ALIGN((u32)cfile->data + cfile->rawsize
+                       , CBFS_ALIGNMENT);
     }
 
     process_links_file();
